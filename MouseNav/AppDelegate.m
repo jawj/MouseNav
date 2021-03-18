@@ -98,6 +98,13 @@ static size_t nextEventsIndex = 0;
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+  [NSUserDefaults.standardUserDefaults registerDefaults:@{
+    @"com.apple.dt.Xcode": @(AppPrefCmdCtrlArrows),
+    @"com.microsoft.VSCode": @(AppPrefCtrlShiftDash),
+    @"com.sublimetext.3": @(AppPrefCtrlShiftDash),
+    @"nl.ultimaker.cura": @(AppPrefDisabled),
+  }];
+  
   NSStatusBar *statusBar = [NSStatusBar systemStatusBar];
   NSStatusItem *item = [statusBar statusItemWithLength:NSVariableStatusItemLength];
   item.button.title = @"⟺";
