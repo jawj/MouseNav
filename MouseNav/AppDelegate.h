@@ -9,7 +9,5 @@
 
 @interface AppDelegate : NSObject <NSApplicationDelegate, NSMenuDelegate>
 
-@property (weak) IBOutlet NSMenu *menu;
-
 @end
 
