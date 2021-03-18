@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		5E0213992602086F005D56EC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E0213982602086F005D56EC /* AppDelegate.m */; };
 		5E02139B26020871005D56EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5E02139A26020871005D56EC /* Assets.xcassets */; };
-		5E02139E26020871005D56EC /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5E02139C26020871005D56EC /* MainMenu.xib */; };
 		5E0213A126020871005D56EC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E0213A026020871005D56EC /* main.m */; };
 /* End PBXBuildFile section */
 
@@ -18,7 +17,6 @@
 		5E0213972602086F005D56EC /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		5E0213982602086F005D56EC /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		5E02139A26020871005D56EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		5E02139D26020871005D56EC /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		5E02139F26020871005D56EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5E0213A026020871005D56EC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		5E0213A226020871005D56EC /* MouseNav.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MouseNav.entitlements; sourceTree = "<group>"; };
@@ -57,7 +55,6 @@
 				5E0213972602086F005D56EC /* AppDelegate.h */,
 				5E0213982602086F005D56EC /* AppDelegate.m */,
 				5E02139A26020871005D56EC /* Assets.xcassets */,
-				5E02139C26020871005D56EC /* MainMenu.xib */,
 				5E02139F26020871005D56EC /* Info.plist */,
 				5E0213A026020871005D56EC /* main.m */,
 				5E0213A226020871005D56EC /* MouseNav.entitlements */,
@@ -122,7 +119,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5E02139B26020871005D56EC /* Assets.xcassets in Resources */,
-				5E02139E26020871005D56EC /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -139,17 +135,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
-
-/* Begin PBXVariantGroup section */
-		5E02139C26020871005D56EC /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				5E02139D26020871005D56EC /* Base */,
-			);
-			name = MainMenu.xib;
-			sourceTree = "<group>";
-		};
-/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		5E0213A326020871005D56EC /* Debug */ = {
@@ -278,6 +263,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -298,6 +284,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				MACOSX_DEPLOYMENT_TARGET = 10.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
