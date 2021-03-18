@@ -239,8 +239,8 @@ static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CG
 static void clearEvents(CGEventTapProxy sendProxy) {
   for (NSUInteger i = 0; i < nextEventsIndex; i ++) {
     CGEventRef event = events[i];
-    if (sendProxy) CGEventTapPostEvent(sendProxy, event);  // should be released by system
-    CFRelease(event);
+    if (sendProxy) CGEventTapPostEvent(sendProxy, event);
+    CFRelease(event);  // balancing the manual CFRetain above
   }
   nextEventsIndex = 0;
 }
