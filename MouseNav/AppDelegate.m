@@ -112,7 +112,7 @@ static size_t nextEventsIndex = 0;
   [item.menu addItemWithTitle:@"Current app" action:NULL keyEquivalent:@""];
   [item.menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
   item.menu.delegate = self;
-  self.statusItem = item;
+  self.statusItem = item;  // not retained if we omit this
   
   CGEventMask eventMask = (CGEventMaskBit(kCGEventRightMouseDown) |
                            CGEventMaskBit(kCGEventRightMouseDragged) |
@@ -133,8 +133,8 @@ static size_t nextEventsIndex = 0;
   } else {
     NSAlert *alert = [NSAlert new];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"GestureNav processes mouse events, and requires Accessibility permissions to work";
-    alert.informativeText = @"Please go to System Preferences → Security & Privacy → Privacy → Accessibility and enable for GestureNav.";
+    alert.messageText = @"MouseNav requires Accessibility permissions to work";
+    alert.informativeText = @"Go to System Preferences → Security & Privacy → Privacy → Accessibility and enable MouseNav, then re-open the app.";
     __unused NSModalResponse response = [alert runModal];
     [NSApplication.sharedApplication terminate:self];
   }
