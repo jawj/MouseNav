@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="17701" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES" customObjectInstantitationMethod="direct">
+    <dependencies>
+        <deployment identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="17701"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <objects>
+        <customObject id="-2" userLabel="File's Owner"/>
+        <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
+        <customObject id="-3" userLabel="Application" customClass="NSObject"/>
+        <window title="About MouseNav" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" visibleAtLaunch="NO" animationBehavior="default" titlebarAppearsTransparent="YES" id="QvC-M9-y7g">
+            <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES"/>
+            <windowPositionMask key="initialPositionMask" leftStrut="YES" rightStrut="YES" topStrut="YES" bottomStrut="YES"/>
+            <rect key="contentRect" x="196" y="240" width="295" height="160"/>
+            <rect key="screenRect" x="0.0" y="0.0" width="1920" height="1055"/>
+            <view key="contentView" wantsLayer="YES" id="EiT-Mj-1SZ">
+                <rect key="frame" x="0.0" y="0.0" width="295" height="160"/>
+                <autoresizingMask key="autoresizingMask"/>
+                <subviews>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="yfC-iz-01r">
+                        <rect key="frame" x="31" y="20" width="234" height="16"/>
+                        <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="Copyright © George MacKerron 2021" id="vap-i8-iQY">
+                            <font key="font" metaFont="system"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                    <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" translatesAutoresizingMaskIntoConstraints="NO" id="Pwf-MN-8DL">
+                        <rect key="frame" x="110" y="44" width="76" height="16"/>
+                        <textFieldCell key="cell" lineBreakMode="clipping" alignment="center" title="MouseNav" id="kfc-R1-xNs">
+                            <font key="font" textStyle="headline" name=".SFNS-Bold"/>
+                            <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                            <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                        </textFieldCell>
+                    </textField>
+                </subviews>
+                <constraints>
+                    <constraint firstItem="Pwf-MN-8DL" firstAttribute="centerX" secondItem="EiT-Mj-1SZ" secondAttribute="centerX" id="QoG-Kq-FaY"/>
+                    <constraint firstItem="yfC-iz-01r" firstAttribute="top" secondItem="Pwf-MN-8DL" secondAttribute="bottom" constant="8" symbolic="YES" id="UcT-fx-MHR"/>
+                    <constraint firstAttribute="bottom" secondItem="yfC-iz-01r" secondAttribute="bottom" constant="20" symbolic="YES" id="lbZ-Qx-ybJ"/>
+                    <constraint firstItem="yfC-iz-01r" firstAttribute="centerX" secondItem="EiT-Mj-1SZ" secondAttribute="centerX" id="oiY-ld-6hN"/>
+                </constraints>
+            </view>
+            <point key="canvasLocation" x="19" y="29"/>
+        </window>
+    </objects>
+</document>

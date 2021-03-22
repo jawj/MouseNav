@@ -10,6 +10,8 @@
 		5E0213992602086F005D56EC /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E0213982602086F005D56EC /* AppDelegate.m */; };
 		5E02139B26020871005D56EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5E02139A26020871005D56EC /* Assets.xcassets */; };
 		5E0213A126020871005D56EC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5E0213A026020871005D56EC /* main.m */; };
+		5ED796652608FD3000F14D0F /* about.xib in Resources */ = {isa = PBXBuildFile; fileRef = 5ED796642608FD3000F14D0F /* about.xib */; };
+		5ED7966A26094BF800F14D0F /* NSLabel.m in Sources */ = {isa = PBXBuildFile; fileRef = 5ED7966926094BF800F14D0F /* NSLabel.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +22,9 @@
 		5E02139F26020871005D56EC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		5E0213A026020871005D56EC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		5E0213A226020871005D56EC /* MouseNav.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MouseNav.entitlements; sourceTree = "<group>"; };
+		5ED796642608FD3000F14D0F /* about.xib */ = {isa = PBXFileReference; lastKnownFileType = file.xib; path = about.xib; sourceTree = "<group>"; };
+		5ED7966926094BF800F14D0F /* NSLabel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSLabel.m; sourceTree = "<group>"; };
+		5ED7966C26094C0000F14D0F /* NSLabel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NSLabel.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -54,6 +59,9 @@
 			children = (
 				5E0213972602086F005D56EC /* AppDelegate.h */,
 				5E0213982602086F005D56EC /* AppDelegate.m */,
+				5ED7966C26094C0000F14D0F /* NSLabel.h */,
+				5ED7966926094BF800F14D0F /* NSLabel.m */,
+				5ED796642608FD3000F14D0F /* about.xib */,
 				5E02139A26020871005D56EC /* Assets.xcassets */,
 				5E02139F26020871005D56EC /* Info.plist */,
 				5E0213A026020871005D56EC /* main.m */,
@@ -119,6 +127,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5E02139B26020871005D56EC /* Assets.xcassets in Resources */,
+				5ED796652608FD3000F14D0F /* about.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -131,6 +140,7 @@
 			files = (
 				5E0213A126020871005D56EC /* main.m in Sources */,
 				5E0213992602086F005D56EC /* AppDelegate.m in Sources */,
+				5ED7966A26094BF800F14D0F /* NSLabel.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -188,7 +198,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.1;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -241,7 +251,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 11.1;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
@@ -263,7 +273,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -284,7 +294,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 10.10;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

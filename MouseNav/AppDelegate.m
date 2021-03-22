@@ -6,6 +6,8 @@
 //
 
 #import "AppDelegate.h"
+#import "NSLabel.h"
+
 #define MaxEvents 1024
 #define MinGesturePixels 48
 #define MaxWobblePixels 2
@@ -53,8 +55,7 @@ static size_t nextEventsIndex = 0;
 - (void)setAppPref:(AppPref)appPref {
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
   NSString *frontBundleId = NSWorkspace.sharedWorkspace.frontmostApplication.bundleIdentifier;
-  if (appPref == 0) [defs removeObjectForKey:frontBundleId];
-  else [defs setInteger:appPref forKey:frontBundleId];
+  [defs setInteger:appPref forKey:frontBundleId];
   [defs synchronize];
 }
 
@@ -79,22 +80,77 @@ static size_t nextEventsIndex = 0;
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
   AppPref appPref = [defs integerForKey:frontApp.bundleIdentifier];
   
-  NSMenuItem *item = menu.itemArray.firstObject;
-  item.title = frontApp.localizedName;
-  item.submenu = [NSMenu.alloc initWithTitle:@"Current app"];
+  [menu removeAllItems];
   
-  NSMenuItem *subItem;
-  subItem = [item.submenu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
-  subItem.state = appPref == 0 ? NSOnState : NSOffState;
+  NSMenuItem *item;
+  NSString *title = frontApp.localizedName;
+  NSFont *titleFont = [NSFontManager.sharedFontManager convertFont:[NSFont menuFontOfSize:0.0]
+                                                       toHaveTrait:NSBoldFontMask];
   
-  subItem = [item.submenu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(arrows) keyEquivalent:@""];
-  subItem.state = appPref == 2 ? NSOnState : NSOffState;
+  item = [menu addItemWithTitle:title action:NULL keyEquivalent:@""];
+  item.attributedTitle = [NSAttributedString.alloc initWithString:title
+                                                       attributes:@{NSFontAttributeName: titleFont}];
   
-  subItem = [item.submenu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
-  subItem.state = appPref == 3 ? NSOnState : NSOffState;
+  item = [menu addItemWithTitle:@"On back and forward ..." action:NULL keyEquivalent:@""];
   
-  subItem = [item.submenu addItemWithTitle:@"Disable gestures" action:@selector(none) keyEquivalent:@""];
-  subItem.state = appPref == 1 ? NSOnState : NSOffState;
+  item = [menu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
+  item.state = appPref == 0 ? NSOnState : NSOffState;
+  
+  item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(arrows) keyEquivalent:@""];
+  item.state = appPref == 2 ? NSOnState : NSOffState;
+  
+  item = [menu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
+  item.state = appPref == 3 ? NSOnState : NSOffState;
+  
+  
+  item = [NSMenuItem.alloc initWithTitle:@"X" action:nil keyEquivalent:@""];
+  NSView *view = [NSView.alloc initWithFrame:CGRectZero];
+  
+  NSLabel *sendLabel = NSLabel.new;
+  sendLabel.stringValue = @"Send";
+  sendLabel.font = [NSFont menuFontOfSize:0.0];
+  
+  NSLabel *andLabel = NSLabel.new;
+  andLabel.stringValue = @"and";
+  andLabel.font = [NSFont menuFontOfSize:0.0];
+   
+  NSButton *backBtn = [NSButton buttonWithTitle:@"⌘[" target:NULL action:NULL];
+  NSButton *fwdBtn = [NSButton buttonWithTitle:@"⌘]" target:NULL action:NULL];
+  
+  [view addSubview:sendLabel];
+  [view addSubview:backBtn];
+  [view addSubview:andLabel];
+  [view addSubview:fwdBtn];
+  
+  view.translatesAutoresizingMaskIntoConstraints =
+  sendLabel.translatesAutoresizingMaskIntoConstraints =
+  andLabel.translatesAutoresizingMaskIntoConstraints = backBtn.translatesAutoresizingMaskIntoConstraints = fwdBtn.translatesAutoresizingMaskIntoConstraints = NO;
+  
+  [NSLayoutConstraint activateConstraints:@[
+    [sendLabel.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:24.0],
+    [backBtn.leadingAnchor constraintEqualToAnchor:sendLabel.trailingAnchor constant:6.0],
+    [andLabel.leadingAnchor constraintEqualToAnchor:backBtn.trailingAnchor constant:6.0],
+    [fwdBtn.leadingAnchor constraintEqualToAnchor:andLabel.trailingAnchor constant:6.0],
+    [view.trailingAnchor constraintGreaterThanOrEqualToAnchor:fwdBtn.trailingAnchor constant:20.0],
+    
+    [backBtn.topAnchor constraintEqualToAnchor:view.topAnchor constant: 4.0],
+    [sendLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
+    [view.bottomAnchor constraintEqualToAnchor:backBtn.bottomAnchor constant: 4.0],
+    [andLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
+    [view.bottomAnchor constraintEqualToAnchor:fwdBtn.bottomAnchor constant: 4.0],
+  ]];
+
+  item.view = view;
+  [menu addItem:item];
+  
+  
+  item = [menu addItemWithTitle:@"Do nothing" action:@selector(none) keyEquivalent:@""];
+  item.state = appPref == 1 ? NSOnState : NSOffState;
+  
+  [menu addItem:NSMenuItem.separatorItem];
+  [menu addItemWithTitle:@"Start at login" action:@selector(quit) keyEquivalent:@""];
+  [menu addItemWithTitle:@"About MouseNav (1.0)" action:@selector(quit) keyEquivalent:@""];
+  [menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -108,9 +164,8 @@ static size_t nextEventsIndex = 0;
   NSStatusBar *statusBar = [NSStatusBar systemStatusBar];
   NSStatusItem *item = [statusBar statusItemWithLength:NSVariableStatusItemLength];
   item.button.title = @"⟺";
+  
   item.menu = [NSMenu.alloc initWithTitle:@"MouseNav"];
-  [item.menu addItemWithTitle:@"Current app" action:NULL keyEquivalent:@""];
-  [item.menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
   item.menu.delegate = self;
   self.statusItem = item;  // not retained if we omit this
   
@@ -133,9 +188,9 @@ static size_t nextEventsIndex = 0;
   } else {
     NSAlert *alert = [NSAlert new];
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"MouseNav requires Accessibility permissions to work";
-    alert.informativeText = @"Go to System Preferences → Security & Privacy → Privacy → Accessibility and enable MouseNav, then re-open the app.";
-    __unused NSModalResponse response = [alert runModal];
+    alert.messageText = @"MouseNav requires Accessibility permissions";
+    alert.informativeText = @"Go to System Preferences → Security & Privacy → Privacy → Accessibility, and enable MouseNav. Then re-open the app.";
+    [alert runModal];
     [NSApplication.sharedApplication terminate:self];
   }
 }
@@ -259,13 +314,13 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
       virtualKey = forward ? 0x7C : 0x7B;
       flags = kCGEventFlagMaskCommand | kCGEventFlagMaskControl;
       break;
-    
+      
     case AppPrefCtrlShiftDash:
       virtualKey = 0x1B;
       flags = forward ? kCGEventFlagMaskControl | kCGEventFlagMaskShift : kCGEventFlagMaskControl;
       break;
   }
-
+  
   CGEventRef keydown = CGEventCreateKeyboardEvent(NULL, virtualKey, true);
   CGEventSetFlags(keydown, flags);
   CGEventPost(kCGSessionEventTap, keydown);
