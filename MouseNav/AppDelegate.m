@@ -8,6 +8,8 @@
 #import "AppDelegate.h"
 #import "NSLabel.h"
 
+#include <Carbon/Carbon.h>
+
 #define MaxEvents 1024
 #define MinGesturePixels 48
 #define MaxWobblePixels 2
@@ -48,6 +50,20 @@ static GestureState gestureState = GestureStateAwaiting;
 static CGEventRef events[MaxEvents];
 static size_t nextEventsIndex = 0;
 
+// defaults = British/US values
+static CGKeyCode openBracketKeycode = 0x21;
+static CGEventFlags openBracketFlags = 0;
+
+static CGKeyCode closeBracketKeycode = 0x1E;
+static CGEventFlags closeBracketFlags = 0;
+
+static CGKeyCode dashKeycode = 0x1B;
+static CGEventFlags dashFlags = 0;
+
+// these ones don't change
+static CGKeyCode leftArrowKeycode = 0x7B;
+static CGKeyCode rightArrowKeycode = 0x7C;
+
 - (void)quit {
   [NSApplication.sharedApplication terminate:self];
 }
@@ -75,6 +91,30 @@ static size_t nextEventsIndex = 0;
   [self setAppPref:AppPrefDisabled];
 }
 
+- (void)setBackShortcut {
+  DLog(@"tap");
+  CGEventMask eventMask = (CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp));
+  CFMachPortRef keyEventTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, eventMask, keyEventCallback, NULL);
+  CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, keyEventTap, 0);
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+}
+
+static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+  DLog(@"key");
+  UniChar chars[12];
+  UniCharCount charCount;
+  CGEventKeyboardGetUnicodeString(event, 12, &charCount, chars);
+  NSInteger keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+  
+  NSString *str = [NSString stringWithCharacters:chars length:charCount];
+  DLog(@"%u str: %@ charcount: %lu charcode: %u keycode: %lu", CGEventGetType(event), str, charCount, chars[0], keycode);
+  return NULL;
+}
+
+- (void)setForwardShortcut {
+  
+}
+
 - (void)menuNeedsUpdate:(NSMenu *)menu {
   NSRunningApplication *frontApp = NSWorkspace.sharedWorkspace.frontmostApplication;
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
@@ -91,7 +131,10 @@ static size_t nextEventsIndex = 0;
   item.attributedTitle = [NSAttributedString.alloc initWithString:title
                                                        attributes:@{NSFontAttributeName: titleFont}];
   
-  item = [menu addItemWithTitle:@"On back and forward ..." action:NULL keyEquivalent:@""];
+  item = [menu addItemWithTitle:@"For back and forward ..." action:NULL keyEquivalent:@""];
+  
+  NSMutableParagraphStyle *p = NSMutableParagraphStyle.new;
+  p.lineHeightMultiple = 2.0;
   
   item = [menu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
   item.state = appPref == 0 ? NSOnState : NSOffState;
@@ -113,9 +156,9 @@ static size_t nextEventsIndex = 0;
   NSLabel *andLabel = NSLabel.new;
   andLabel.stringValue = @"and";
   andLabel.font = [NSFont menuFontOfSize:0.0];
-   
-  NSButton *backBtn = [NSButton buttonWithTitle:@"⌘[" target:NULL action:NULL];
-  NSButton *fwdBtn = [NSButton buttonWithTitle:@"⌘]" target:NULL action:NULL];
+  
+  NSButton *backBtn = [NSButton buttonWithTitle:@"⌘[" target:self action:@selector(setBackShortcut)];
+  NSButton *fwdBtn = [NSButton buttonWithTitle:@"⌘]" target:self action:@selector(setForwardShortcut)];
   
   [view addSubview:sendLabel];
   [view addSubview:backBtn];
@@ -133,16 +176,15 @@ static size_t nextEventsIndex = 0;
     [fwdBtn.leadingAnchor constraintEqualToAnchor:andLabel.trailingAnchor constant:6.0],
     [view.trailingAnchor constraintGreaterThanOrEqualToAnchor:fwdBtn.trailingAnchor constant:20.0],
     
-    [backBtn.topAnchor constraintEqualToAnchor:view.topAnchor constant: 4.0],
+    [backBtn.topAnchor constraintEqualToAnchor:view.topAnchor constant: 2.0],
     [sendLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
-    [view.bottomAnchor constraintEqualToAnchor:backBtn.bottomAnchor constant: 4.0],
+    [view.bottomAnchor constraintEqualToAnchor:backBtn.bottomAnchor constant: 2.0],
     [andLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
-    [view.bottomAnchor constraintEqualToAnchor:fwdBtn.bottomAnchor constant: 4.0],
+    [view.bottomAnchor constraintEqualToAnchor:fwdBtn.bottomAnchor constant: 2.0],
   ]];
-
+  
   item.view = view;
   [menu addItem:item];
-  
   
   item = [menu addItemWithTitle:@"Do nothing" action:@selector(none) keyEquivalent:@""];
   item.state = appPref == 1 ? NSOnState : NSOffState;
@@ -153,7 +195,111 @@ static size_t nextEventsIndex = 0;
   [menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
 }
 
+CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
+  CGEventFlags result = 0;
+  if (modifiers & shiftKey) {
+    result |= kCGEventFlagMaskShift;
+    DLog(@"Shift");
+  }
+  if (modifiers & optionKey) {
+    result |= kCGEventFlagMaskAlternate;
+    DLog(@"Option");
+  }
+  if (modifiers & controlKey) {
+    result |= kCGEventFlagMaskControl;
+    DLog(@"Control");
+  }
+  if (modifiers & cmdKey) {
+    result |= kCGEventFlagMaskCommand;
+    DLog(@"Command");
+  }
+  return result;
+}
+
+- (void)keyboardChanged {
+  static UInt32 modifierKeyStates[] = {
+    0,
+    shiftKey,  // good bet for [ and ] (Spanish)
+    optionKey,  // good bet for [ and ] (German and Azeri)
+    optionKey | shiftKey,  // good bet for [ and ] (French)
+    controlKey,
+    optionKey | controlKey,
+    controlKey | shiftKey,
+    optionKey | shiftKey | controlKey
+  };
+  size_t modifiersLength = sizeof(modifierKeyStates) / sizeof(UInt32);
+  
+  TISInputSourceRef source = TISCopyCurrentKeyboardInputSource();
+  CFStringRef keyboardName = (CFStringRef)TISGetInputSourceProperty(source, kTISPropertyLocalizedName);
+  CFStringRef keyboardID = (CFStringRef)TISGetInputSourceProperty(source, kTISPropertyInputSourceID);
+  DLog(@"Keyboard: %@ (%@)", keyboardName, keyboardID);
+  
+  CFDataRef layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData);
+  const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
+  
+  UInt32 keyboardType = LMGetKbdType();
+  UInt32 deadKeyState = 0;
+  UniCharCount actualStringLength;
+  UniChar unicodeChar[255] = {0};
+  
+  BOOL foundOpenBracket = NO;
+  BOOL foundCloseBracket = NO;
+  BOOL foundDash = NO;
+  
+  for (size_t i = 0; i < modifiersLength; i++) {
+    UInt32 modifiers = modifierKeyStates[i];
+    UInt32 modifierKeyState = (modifiers >> 8) & 0xFF;
+    for (UInt16 keycode = 0; keycode < 128; keycode++) {
+      OSStatus resultCode = UCKeyTranslate(keyboardLayout,
+                                           keycode,
+                                           kUCKeyActionUp, // kUCKeyActionDown fails for Azeri (Azerbaijani) -- why??
+                                           modifierKeyState,
+                                           keyboardType,
+                                           kUCKeyTranslateNoDeadKeysBit,
+                                           &deadKeyState,
+                                           255,
+                                           &actualStringLength,
+                                           unicodeChar);
+      
+      if (resultCode == noErr) {
+        if (actualStringLength == 1) {
+          UniChar c = unicodeChar[0];
+          if (!foundOpenBracket && c == '[') {
+            openBracketKeycode = keycode;
+            openBracketFlags = eventFlagsFromModifiers(modifiers);
+            foundOpenBracket = YES;
+            DLog(@"char: %c keycode: %d modifiers: %#04x", (char)unicodeChar[0], keycode, modifierKeyState);
+            
+          } else if (!foundCloseBracket && c == ']') {
+            closeBracketKeycode = keycode;
+            closeBracketFlags = eventFlagsFromModifiers(modifiers);
+            foundCloseBracket = YES;
+            DLog(@"char: %c keycode: %d modifiers: %#04x", (char)unicodeChar[0], keycode, modifierKeyState);
+            
+          } else if (!foundDash && c == '-') {
+            dashKeycode = keycode;
+            dashFlags = eventFlagsFromModifiers(modifiers);
+            foundDash = YES;
+            DLog(@"char: %c keycode: %d modifiers: %#04x", (char)unicodeChar[0], keycode, modifierKeyState);
+          }
+        }
+      } else {
+        DLog(@"Error translating %d (%#04x): %d",  keycode, modifierKeyState, resultCode);
+      }
+      
+      if (foundOpenBracket && foundCloseBracket && foundDash) return;
+    }
+  }
+}
+
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+  [self keyboardChanged];
+  [NSDistributedNotificationCenter.defaultCenter addObserver:self
+                                                    selector:@selector(keyboardChanged)
+                                                        name:(__bridge NSString*)kTISNotifySelectedKeyboardInputSourceChanged
+                                                      object:nil
+                                          suspensionBehavior:NSNotificationSuspensionBehaviorCoalesce];
+  
   [NSUserDefaults.standardUserDefaults registerDefaults:@{
     @"com.apple.dt.Xcode": @(AppPrefCmdCtrlArrows),
     @"com.microsoft.VSCode": @(AppPrefCtrlShiftDash),
@@ -306,23 +452,28 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
   
   switch(appPref) {
     case AppPrefCmdBrackets:
-      virtualKey = forward ? 0x1E : 0x21;
-      flags = kCGEventFlagMaskCommand;
+      virtualKey = forward ? closeBracketKeycode : openBracketKeycode;
+      flags = kCGEventFlagMaskCommand | (forward ? closeBracketFlags : openBracketFlags);
       break;
       
     case AppPrefCmdCtrlArrows:
-      virtualKey = forward ? 0x7C : 0x7B;
+      virtualKey = forward ? rightArrowKeycode : leftArrowKeycode;
       flags = kCGEventFlagMaskCommand | kCGEventFlagMaskControl;
       break;
       
     case AppPrefCtrlShiftDash:
-      virtualKey = 0x1B;
-      flags = forward ? kCGEventFlagMaskControl | kCGEventFlagMaskShift : kCGEventFlagMaskControl;
+      virtualKey = dashKeycode;
+      flags = (forward ? kCGEventFlagMaskControl | kCGEventFlagMaskShift : kCGEventFlagMaskControl) | dashFlags;
       break;
   }
   
   CGEventRef keydown = CGEventCreateKeyboardEvent(NULL, virtualKey, true);
   CGEventSetFlags(keydown, flags);
+  
+  //  UniChar character[1];
+  //  [@"[" getCharacters:character range:NSMakeRange(0, 1)];
+  //  CGEventKeyboardSetUnicodeString(keydown, 1, character);
+  
   CGEventPost(kCGSessionEventTap, keydown);
   CFRelease(keydown);
 }
@@ -333,6 +484,8 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
     CFRelease(runLoopSource);
   }
   CFRelease(mouseEventTap);
+  
+  [NSDistributedNotificationCenter.defaultCenter removeObserver:self];
 }
 
 @end
