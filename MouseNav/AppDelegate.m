@@ -44,7 +44,10 @@ typedef NS_ENUM(NSInteger, AppPref) {
 @implementation AppDelegate
 
 static CFMachPortRef mouseEventTap = NULL;
-static CFRunLoopSourceRef runLoopSource = NULL;
+static CFRunLoopSourceRef mouseRunLoopSource = NULL;
+
+static CFMachPortRef keyEventTap = NULL;
+static CFRunLoopSourceRef keyRunLoopSource = NULL;
 
 static GestureState gestureState = GestureStateAwaiting;
 static CGEventRef events[MaxEvents];
@@ -92,27 +95,124 @@ static CGKeyCode rightArrowKeycode = 0x7C;
 }
 
 - (void)setBackShortcut {
-  DLog(@"tap");
-  CGEventMask eventMask = (CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp));
-  CFMachPortRef keyEventTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, eventMask, keyEventCallback, NULL);
-  CFRunLoopSourceRef runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, keyEventTap, 0);
-  CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
-}
-
-static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
-  DLog(@"key");
-  UniChar chars[12];
-  UniCharCount charCount;
-  CGEventKeyboardGetUnicodeString(event, 12, &charCount, chars);
-  NSInteger keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
-  
-  NSString *str = [NSString stringWithCharacters:chars length:charCount];
-  DLog(@"%u str: %@ charcount: %lu charcode: %u keycode: %lu", CGEventGetType(event), str, charCount, chars[0], keycode);
-  return NULL;
+  CGEventMask eventMask = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp);
+  keyEventTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, eventMask, keyEventCallback, NULL);
+  keyRunLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, keyEventTap, 0);
+  CFRunLoopAddSource(CFRunLoopGetCurrent(), keyRunLoopSource, kCFRunLoopCommonModes);
 }
 
 - (void)setForwardShortcut {
   
+}
+
+NSString* representationForKeyEvent(CGEventRef event) {
+  NSInteger keycode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+  
+  NSDictionary<NSNumber*, NSString*>* keycodeStrs = @{
+    @(kVK_F1): @"F1",
+    @(kVK_F2): @"F2",
+    @(kVK_F3): @"F3",
+    @(kVK_F4): @"F4",
+    @(kVK_F5): @"F5",
+    @(kVK_F6): @"F6",
+    @(kVK_F7): @"F7",
+    @(kVK_F8): @"F8",
+    @(kVK_F9): @"F9",
+    @(kVK_F10): @"F10",
+    @(kVK_F11): @"F11",
+    @(kVK_F12): @"F12",
+    @(kVK_F13): @"F13",
+    @(kVK_F14): @"F14",
+    @(kVK_F15): @"F15",
+    @(kVK_F16): @"F16",
+    @(kVK_F17): @"F17",
+    @(kVK_F18): @"F18",
+    @(kVK_F19): @"F19",
+    @(kVK_F20): @"F20",
+    @(kVK_Return): @"⮐",
+    @(kVK_ANSI_KeypadEnter): @"⌤",
+    @(kVK_Tab): @"⇥",
+    @(kVK_Space): @"Space",
+    @(kVK_Delete): @"⌫",
+    @(kVK_ForwardDelete): @"⌦",
+    @(kVK_Escape): @"⎋",
+    @(kVK_Home): @"↖",
+    @(kVK_PageUp): @"⇞",
+    @(kVK_End): @"↘",
+    @(kVK_PageDown): @"⇟",
+    @(kVK_LeftArrow): @"←",
+    @(kVK_RightArrow): @"→",
+    @(kVK_DownArrow): @"↓",
+    @(kVK_UpArrow): @"↑",
+    
+    // non-standard ones:
+    @(145): @"⊕",  // brightness up
+    @(144): @"⊖",  // brightness down
+    @(160): @"⧉",  // mission control
+    @(130): @"⌾",  // dashboard
+  };
+  
+  NSString *key = keycodeStrs[@(keycode)];
+  if (!key) {
+    TISInputSourceRef source = TISCopyCurrentKeyboardInputSource();
+    CFDataRef layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData);
+    const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
+    UInt32 keyboardType = LMGetKbdType();
+    UInt32 deadKeyState = 0;
+    UniCharCount actualStringLength;
+    UniChar unicodeChar[255] = {0};
+    
+    OSStatus resultCode = UCKeyTranslate(keyboardLayout,
+                                         keycode,
+                                         kUCKeyActionDisplay,
+                                         0,  // modifier
+                                         keyboardType,
+                                         kUCKeyTranslateNoDeadKeysBit,
+                                         &deadKeyState,
+                                         255,
+                                         &actualStringLength,
+                                         unicodeChar);
+    
+    if (resultCode == noErr) {
+      key = [NSString stringWithCharacters:unicodeChar length:actualStringLength].uppercaseString;
+      
+    } else {
+      DLog(@"Error: %i", resultCode);
+      key = @"??";
+    }
+  }
+  
+  CGEventFlags flags = CGEventGetFlags(event);
+  NSString* str = [NSString stringWithFormat:@"%@%@%@%@%@",
+                   flags & kCGEventFlagMaskControl ? @"⌃" : @"",
+                   flags & kCGEventFlagMaskAlternate ? @"⌥" : @"",
+                   flags & kCGEventFlagMaskShift ? @"⇧" : @"",
+                   flags & kCGEventFlagMaskCommand ? @"⌘" : @"",
+                   key];
+  
+  DLog(@"display: %@ keycode: %lu flags: %llu", str, keycode, flags);
+  return str;
+}
+
+
+static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+  
+  if (type == kCGEventKeyDown) {
+    DLog(@"down");
+    NSString* representation = representationForKeyEvent(event);
+    
+  } else if (type == kCGEventKeyUp) {
+    DLog(@"up");
+    dispatch_after(DISPATCH_TIME_NOW, dispatch_get_main_queue(), ^{
+      // uninstall the tap
+      CGEventTapEnable(keyEventTap, NO);
+      CFRunLoopRemoveSource(CFRunLoopGetCurrent(), keyRunLoopSource, kCFRunLoopCommonModes);
+      CFRelease(keyRunLoopSource);
+      CFRelease(keyEventTap);
+    });
+  }
+  
+  return NULL;
 }
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
@@ -328,8 +428,8 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
   BOOL accessibilityEnabled = AXIsProcessTrustedWithOptions(options);
   
   if (accessibilityEnabled) {
-    runLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseEventTap, 0);
-    CFRunLoopAddSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
+    mouseRunLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseEventTap, 0);
+    CFRunLoopAddSource(CFRunLoopGetCurrent(), mouseRunLoopSource, kCFRunLoopCommonModes);
     
   } else {
     NSAlert *alert = [NSAlert new];
@@ -469,19 +569,14 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
   
   CGEventRef keydown = CGEventCreateKeyboardEvent(NULL, virtualKey, true);
   CGEventSetFlags(keydown, flags);
-  
-  //  UniChar character[1];
-  //  [@"[" getCharacters:character range:NSMakeRange(0, 1)];
-  //  CGEventKeyboardSetUnicodeString(keydown, 1, character);
-  
   CGEventPost(kCGSessionEventTap, keydown);
   CFRelease(keydown);
 }
 
 - (void)applicationWillTerminate:(NSNotification *)aNotification {
-  if (runLoopSource) {
-    CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
-    CFRelease(runLoopSource);
+  if (mouseRunLoopSource) {
+    CFRunLoopRemoveSource(CFRunLoopGetCurrent(), mouseRunLoopSource, kCFRunLoopCommonModes);
+    CFRelease(mouseRunLoopSource);
   }
   CFRelease(mouseEventTap);
   
