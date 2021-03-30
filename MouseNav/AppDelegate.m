@@ -91,7 +91,7 @@ static CGKeyCode rightArrowKeycode = 0x7C;
 }
 
 - (void)about {
-  
+  [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:@"http://mackerron.com"]];
 }
 
 - (void)setAppPref:(AppPref)appPref {
