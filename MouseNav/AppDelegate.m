@@ -32,7 +32,8 @@ typedef NS_ENUM(NSInteger, AppPref) {
   AppPrefCmdBrackets = 0,
   AppPrefDisabled = 1,
   AppPrefCmdCtrlArrows = 2,
-  AppPrefCtrlShiftDash = 3
+  AppPrefCtrlShiftDash = 3,
+  AppPrefCmdArrows = 4
 };
 
 @implementation NSAttributedString (Extra)
@@ -62,8 +63,10 @@ typedef NS_ENUM(NSInteger, AppPref) {
 static CFMachPortRef mouseEventTap = NULL;
 static CFRunLoopSourceRef mouseRunLoopSource = NULL;
 
+/*
 static CFMachPortRef keyEventTap = NULL;
 static CFRunLoopSourceRef keyRunLoopSource = NULL;
+*/
 
 static GestureState gestureState = GestureStateAwaiting;
 static CGEventRef events[MaxEvents];
@@ -87,6 +90,10 @@ static CGKeyCode rightArrowKeycode = 0x7C;
   [NSApplication.sharedApplication terminate:self];
 }
 
+- (void)about {
+  
+}
+
 - (void)setAppPref:(AppPref)appPref {
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
   NSString *frontBundleId = NSWorkspace.sharedWorkspace.frontmostApplication.bundleIdentifier;
@@ -94,8 +101,7 @@ static CGKeyCode rightArrowKeycode = 0x7C;
   [defs synchronize];
 }
 
-- (void)brackets {
-  [self setAppPref:AppPrefCmdBrackets];
+- (void)showKeyboardLayoutWarning {
   NSAlert *alert = [NSAlert new];
   alert.alertStyle = NSAlertStyleWarning;
   alert.messageText = @"Keyboard layout issue";
@@ -103,18 +109,29 @@ static CGKeyCode rightArrowKeycode = 0x7C;
   [alert runModal];
 }
 
+- (void)brackets {
+  [self setAppPref:AppPrefCmdBrackets];
+  if (openBracketFlags || closeBracketFlags) [self showKeyboardLayoutWarning];
+}
+
 - (void)arrows {
+  [self setAppPref:AppPrefCmdArrows];
+}
+
+- (void)ctrlArrows {
   [self setAppPref:AppPrefCmdCtrlArrows];
 }
 
 - (void)dash {
   [self setAppPref:AppPrefCtrlShiftDash];
+  if (dashFlags) [self showKeyboardLayoutWarning];
 }
 
 - (void)none {
   [self setAppPref:AppPrefDisabled];
 }
 
+/*
 - (void)setBackShortcut {
   CGEventMask eventMask = CGEventMaskBit(kCGEventKeyDown) | CGEventMaskBit(kCGEventKeyUp);
   keyEventTap = CGEventTapCreate(kCGHIDEventTap, kCGHeadInsertEventTap, kCGEventTapOptionDefault, eventMask, keyEventCallback, NULL);
@@ -217,7 +234,6 @@ NSString* representationForKeyEvent(CGEventRef event) {
   return str;
 }
 
-
 static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
   
   if (type == kCGEventKeyDown) {
@@ -237,6 +253,7 @@ static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
   
   return NULL;
 }
+*/
 
 NSString* narrowlySpacedString(NSString *s) {
   NSMutableArray<NSString*> *chars = [NSMutableArray.alloc initWithCapacity:s.length + 2];
@@ -259,8 +276,6 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
           [NSAttributedString.alloc initWithString:narrowlySpacedString(s1) attributes:shortcutAttrs],
           [NSAttributedString.alloc initWithString:narrowlySpacedString(s2) attributes:shortcutAttrs]];
 }
-
-
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
   NSRunningApplication *frontApp = NSWorkspace.sharedWorkspace.frontmostApplication;
@@ -286,18 +301,30 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   item = [menu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
   item.attributedTitle = stringForShortcuts(@"⌘[", @"⌘]");
   if (@available(macOS 11, *)) {
-    item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
+    if (openBracketFlags || closeBracketFlags) {
+      item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
+    }
   }
-  item.state = appPref == 0 ? NSOnState : NSOffState;
+  item.state = appPref == AppPrefCmdBrackets ? NSOnState : NSOffState;
   
-  item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(arrows) keyEquivalent:@""];
+  item = [menu addItemWithTitle:@"Send ⌘← and ⌘→" action:@selector(arrows) keyEquivalent:@""];
+  item.attributedTitle = stringForShortcuts(@"⌘←", @"⌘→");
+  item.state = appPref == AppPrefCmdArrows ? NSOnState : NSOffState;
+  
+  item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(ctrlArrows) keyEquivalent:@""];
   item.attributedTitle = stringForShortcuts(@"⌃⌘←", @"⌃⌘→");
-  item.state = appPref == 2 ? NSOnState : NSOffState;
+  item.state = appPref == AppPrefCmdCtrlArrows ? NSOnState : NSOffState;
   
   item = [menu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
-  item.state = appPref == 3 ? NSOnState : NSOffState;
+  item.attributedTitle = stringForShortcuts(@"⌃-", @"⌃⇧-");
+  if (@available(macOS 11, *)) {
+    if (dashFlags) {
+      item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
+    }
+  }
+  item.state = appPref == AppPrefCtrlShiftDash ? NSOnState : NSOffState;
   
-  
+  /*
   item = [NSMenuItem.alloc initWithTitle:@"X" action:nil keyEquivalent:@""];
   NSView *view = [NSView.alloc initWithFrame:CGRectZero];
   
@@ -337,13 +364,14 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   
   item.view = view;
   [menu addItem:item];
+  */
   
   item = [menu addItemWithTitle:@"Do nothing" action:@selector(none) keyEquivalent:@""];
-  item.state = appPref == 1 ? NSOnState : NSOffState;
+  item.state = appPref == AppPrefDisabled ? NSOnState : NSOffState;
   
   [menu addItem:NSMenuItem.separatorItem];
-  [menu addItemWithTitle:@"Start at login" action:@selector(quit) keyEquivalent:@""];
-  [menu addItemWithTitle:@"About MouseNav (1.0)" action:@selector(quit) keyEquivalent:@""];
+  // [menu addItemWithTitle:@"Start at login" action:@selector(quit) keyEquivalent:@""];
+  [menu addItemWithTitle:@"About MouseNav" action:@selector(about) keyEquivalent:@""];
   [menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
 }
 
@@ -612,6 +640,11 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
     case AppPrefCmdBrackets:
       virtualKey = forward ? closeBracketKeycode : openBracketKeycode;
       flags = kCGEventFlagMaskCommand | (forward ? closeBracketFlags : openBracketFlags);
+      break;
+      
+    case AppPrefCmdArrows:
+      virtualKey = forward ? rightArrowKeycode : leftArrowKeycode;
+      flags = kCGEventFlagMaskCommand;
       break;
       
     case AppPrefCmdCtrlArrows:
