@@ -11,7 +11,7 @@
 #include <Carbon/Carbon.h>
 
 #define MaxEvents 1024
-#define MinGesturePixels 48
+#define MinGesturePixels 42
 #define MaxWobblePixels 2
 
 #ifdef DEBUG
@@ -34,6 +34,22 @@ typedef NS_ENUM(NSInteger, AppPref) {
   AppPrefCmdCtrlArrows = 2,
   AppPrefCtrlShiftDash = 3
 };
+
+@implementation NSAttributedString (Extra)
+  + (instancetype)stringWithFormat:(NSAttributedString *)fmt, ... {
+    NSMutableAttributedString* str = [NSMutableAttributedString.alloc initWithAttributedString:fmt];
+    va_list args;
+    va_start(args, fmt);
+    NSRange range;
+    while ((range = [str.string rangeOfString:@"%@"]).location != NSNotFound) {
+      NSAttributedString *arg = va_arg(args, NSAttributedString*);
+      [str replaceCharactersInRange:range withAttributedString:arg];
+    }
+    va_end(args);
+    return str;
+  }
+@end
+
 
 @interface AppDelegate ()
 
@@ -80,6 +96,11 @@ static CGKeyCode rightArrowKeycode = 0x7C;
 
 - (void)brackets {
   [self setAppPref:AppPrefCmdBrackets];
+  NSAlert *alert = [NSAlert new];
+  alert.alertStyle = NSAlertStyleWarning;
+  alert.messageText = @"Keyboard layout issue";
+  alert.informativeText = @"It may not be possible to send this keyboard shortcut correctly under the current keyboard layout.";
+  [alert runModal];
 }
 
 - (void)arrows {
@@ -180,6 +201,8 @@ NSString* representationForKeyEvent(CGEventRef event) {
       DLog(@"Error: %i", resultCode);
       key = @"??";
     }
+    
+    CFRelease(source);
   }
   
   CGEventFlags flags = CGEventGetFlags(event);
@@ -215,6 +238,30 @@ static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
   return NULL;
 }
 
+NSString* narrowlySpacedString(NSString *s) {
+  NSMutableArray<NSString*> *chars = [NSMutableArray.alloc initWithCapacity:s.length + 2];
+  [s enumerateSubstringsInRange:NSMakeRange(0, s.length)
+                        options:NSStringEnumerationByComposedCharacterSequences
+                     usingBlock:^(NSString * _Nullable substring, NSRange substringRange, NSRange enclosingRange, BOOL * _Nonnull stop) {
+    
+    [chars addObject:substring];
+  }];
+  return [NSString stringWithFormat:@"\u2009%@\u2009", [chars componentsJoinedByString:@"\u2009"]];
+}
+
+NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
+  NSFont* font = [NSFont menuFontOfSize:0.0];
+  NSFont* boldFont = [NSFontManager.sharedFontManager convertFont:font toHaveTrait:NSBoldFontMask];
+  NSDictionary* shortcutAttrs = @{NSFontAttributeName: boldFont, NSForegroundColorAttributeName: NSColor.darkGrayColor};
+                  
+  return [NSAttributedString stringWithFormat:
+          [NSAttributedString.alloc initWithString:@"Send %@ and %@" attributes:@{NSFontAttributeName: font}],
+          [NSAttributedString.alloc initWithString:narrowlySpacedString(s1) attributes:shortcutAttrs],
+          [NSAttributedString.alloc initWithString:narrowlySpacedString(s2) attributes:shortcutAttrs]];
+}
+
+
+
 - (void)menuNeedsUpdate:(NSMenu *)menu {
   NSRunningApplication *frontApp = NSWorkspace.sharedWorkspace.frontmostApplication;
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
@@ -237,9 +284,14 @@ static CGEventRef keyEventCallback(CGEventTapProxy proxy, CGEventType type, CGEv
   p.lineHeightMultiple = 2.0;
   
   item = [menu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
+  item.attributedTitle = stringForShortcuts(@"⌘[", @"⌘]");
+  if (@available(macOS 11, *)) {
+    item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
+  }
   item.state = appPref == 0 ? NSOnState : NSOffState;
   
   item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(arrows) keyEquivalent:@""];
+  item.attributedTitle = stringForShortcuts(@"⌃⌘←", @"⌃⌘→");
   item.state = appPref == 2 ? NSOnState : NSOffState;
   
   item = [menu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
@@ -387,9 +439,14 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
         DLog(@"Error translating %d (%#04x): %d",  keycode, modifierKeyState, resultCode);
       }
       
-      if (foundOpenBracket && foundCloseBracket && foundDash) return;
+      if (foundOpenBracket && foundCloseBracket && foundDash) {
+        CFRelease(source);
+        return;
+      }
     }
   }
+  
+  CFRelease(source);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
@@ -426,6 +483,7 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
   CFDictionaryRef options = CFDictionaryCreate(kCFAllocatorDefault, keys, values, sizeof(keys) / sizeof(*keys),
                                                &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
   BOOL accessibilityEnabled = AXIsProcessTrustedWithOptions(options);
+  CFRelease(options);
   
   if (accessibilityEnabled) {
     mouseRunLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseEventTap, 0);
