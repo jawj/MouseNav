@@ -284,27 +284,30 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   AppPref appPref = [defs integerForKey:frontApp.bundleIdentifier];
   
   NSString *appName = frontApp.localizedName;
-  NSFont *titleFont = [NSFontManager.sharedFontManager convertFont:[NSFont menuFontOfSize:0.0]
-                                                       toHaveTrait:NSBoldFontMask];
-  NSFont *settingsFont = [NSFontManager.sharedFontManager convertFont:[NSFont menuFontOfSize:0.0]
-                                                          toHaveTrait:NSBoldFontMask];
+  NSFont *menuFont = [NSFont menuFontOfSize:0.0];
+  NSFont *boldMenuFont = [NSFontManager.sharedFontManager convertFont:menuFont toHaveTrait:NSBoldFontMask];
   
   [menu removeAllItems];
   
   item = [menu addItemWithTitle:@"Mouse Gestures" action:nil keyEquivalent:@""];
   item.attributedTitle = [NSAttributedString.alloc initWithString:item.title
-                                                       attributes:@{NSFontAttributeName: titleFont}];
+                                                       attributes:@{NSFontAttributeName: boldMenuFont}];
   // item.image = [NSImage imageNamed:@"StatusItem"];
   
   [menu addItemWithTitle:@"Setup and Help" action:@selector(about) keyEquivalent:@""];
   [menu addItem:NSMenuItem.separatorItem];
   
+  NSMutableAttributedString *settingsCaption = [NSMutableAttributedString.alloc initWithString:@"In "
+                                                                                    attributes:@{NSFontAttributeName: menuFont}];
+  [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:appName
+                                                                        attributes:@{NSFontAttributeName: boldMenuFont}]];
+  [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:@", for back and forward …"
+                                                                        attributes:@{NSFontAttributeName: menuFont}]];
   
-  item = [menu addItemWithTitle:[NSString stringWithFormat:@"%@ settings", appName] action:NULL keyEquivalent:@""];
-  item.attributedTitle = [NSAttributedString.alloc initWithString:item.title
-                                                       attributes:@{NSFontAttributeName: settingsFont}];
+  item = [menu addItemWithTitle:settingsCaption.string action:NULL keyEquivalent:@""];
+  item.attributedTitle = settingsCaption;
   
-  item = [menu addItemWithTitle:@"For back and forward ..." action:NULL keyEquivalent:@""];
+  // item = [menu addItemWithTitle:@"For back and forward …" action:NULL keyEquivalent:@""];
   
   NSMutableParagraphStyle *p = NSMutableParagraphStyle.new;
   p.lineHeightMultiple = 2.0;
