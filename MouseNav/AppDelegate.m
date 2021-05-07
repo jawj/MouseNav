@@ -33,7 +33,8 @@ typedef NS_ENUM(NSInteger, AppPref) {
   AppPrefDisabled = 1,
   AppPrefCmdCtrlArrows = 2,
   AppPrefCtrlShiftDash = 3,
-  AppPrefCmdArrows = 4
+  AppPrefCmdArrows = 4,
+  AppPrefAltCmdArrows = 5
 };
 
 @implementation NSAttributedString (Extra)
@@ -120,6 +121,10 @@ static CGKeyCode rightArrowKeycode = 0x7C;
 
 - (void)ctrlArrows {
   [self setAppPref:AppPrefCmdCtrlArrows];
+}
+
+- (void)altCmdArrows {
+  [self setAppPref:AppPrefAltCmdArrows];
 }
 
 - (void)dash {
@@ -296,12 +301,12 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   
   [menu addItemWithTitle:@"Setup and Help" action:@selector(about) keyEquivalent:@""];
   [menu addItem:NSMenuItem.separatorItem];
-  
-  NSMutableAttributedString *settingsCaption = [NSMutableAttributedString.alloc initWithString:@"In "
+
+  NSMutableAttributedString *settingsCaption = [NSMutableAttributedString.alloc initWithString:@"For back and forward \nin "
                                                                                     attributes:@{NSFontAttributeName: menuFont}];
   [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:appName
                                                                         attributes:@{NSFontAttributeName: boldMenuFont}]];
-  [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:@", for back and forward …"
+  [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:@" …"
                                                                         attributes:@{NSFontAttributeName: menuFont}]];
   
   item = [menu addItemWithTitle:settingsCaption.string action:NULL keyEquivalent:@""];
@@ -328,6 +333,10 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(ctrlArrows) keyEquivalent:@""];
   item.attributedTitle = stringForShortcuts(@"⌃⌘←", @"⌃⌘→");
   item.state = appPref == AppPrefCmdCtrlArrows ? NSOnState : NSOffState;
+  
+  item = [menu addItemWithTitle:@"Send ⌥⌘← and ⌥⌘→" action:@selector(altCmdArrows) keyEquivalent:@""];
+  item.attributedTitle = stringForShortcuts(@"⌥⌘←", @"⌥⌘→");
+  item.state = appPref == AppPrefAltCmdArrows ? NSOnState : NSOffState;
   
   item = [menu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
   item.attributedTitle = stringForShortcuts(@"⌃-", @"⌃⇧-");
@@ -671,6 +680,11 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
     case AppPrefCmdCtrlArrows:
       virtualKey = forward ? rightArrowKeycode : leftArrowKeycode;
       flags = kCGEventFlagMaskCommand | kCGEventFlagMaskControl;
+      break;
+      
+    case AppPrefAltCmdArrows:
+      virtualKey = forward ? rightArrowKeycode : leftArrowKeycode;
+      flags = kCGEventFlagMaskCommand | kCGEventFlagMaskAlternate;
       break;
       
     case AppPrefCtrlShiftDash:
