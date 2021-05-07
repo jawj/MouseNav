@@ -91,7 +91,7 @@ static CGKeyCode rightArrowKeycode = 0x7C;
 }
 
 - (void)about {
-  [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:@"http://mackerron.com"]];
+  [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:@"http://mackerron.com/gestures/#setup-help"]];
 }
 
 - (void)setAppPref:(AppPref)appPref {
@@ -105,7 +105,7 @@ static CGKeyCode rightArrowKeycode = 0x7C;
   NSAlert *alert = [NSAlert new];
   alert.alertStyle = NSAlertStyleWarning;
   alert.messageText = @"Keyboard layout issue";
-  alert.informativeText = @"It may not be possible to send this keyboard shortcut correctly under the current keyboard layout.";
+  alert.informativeText = @"It may not be possible to send this keyboard shortcut with the current keyboard layout.";
   [alert runModal];
 }
 
@@ -278,20 +278,31 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
 }
 
 - (void)menuNeedsUpdate:(NSMenu *)menu {
+  NSMenuItem *item;
   NSRunningApplication *frontApp = NSWorkspace.sharedWorkspace.frontmostApplication;
   NSUserDefaults *defs = NSUserDefaults.standardUserDefaults;
   AppPref appPref = [defs integerForKey:frontApp.bundleIdentifier];
   
-  [menu removeAllItems];
-  
-  NSMenuItem *item;
-  NSString *title = frontApp.localizedName;
+  NSString *appName = frontApp.localizedName;
   NSFont *titleFont = [NSFontManager.sharedFontManager convertFont:[NSFont menuFontOfSize:0.0]
                                                        toHaveTrait:NSBoldFontMask];
+  NSFont *settingsFont = [NSFontManager.sharedFontManager convertFont:[NSFont menuFontOfSize:0.0]
+                                                          toHaveTrait:NSBoldFontMask];
   
-  item = [menu addItemWithTitle:title action:NULL keyEquivalent:@""];
-  item.attributedTitle = [NSAttributedString.alloc initWithString:title
+  [menu removeAllItems];
+  
+  item = [menu addItemWithTitle:@"Mouse Gestures" action:nil keyEquivalent:@""];
+  item.attributedTitle = [NSAttributedString.alloc initWithString:item.title
                                                        attributes:@{NSFontAttributeName: titleFont}];
+  // item.image = [NSImage imageNamed:@"StatusItem"];
+  
+  [menu addItemWithTitle:@"Setup and Help" action:@selector(about) keyEquivalent:@""];
+  [menu addItem:NSMenuItem.separatorItem];
+  
+  
+  item = [menu addItemWithTitle:[NSString stringWithFormat:@"%@ settings", appName] action:NULL keyEquivalent:@""];
+  item.attributedTitle = [NSAttributedString.alloc initWithString:item.title
+                                                       attributes:@{NSFontAttributeName: settingsFont}];
   
   item = [menu addItemWithTitle:@"For back and forward ..." action:NULL keyEquivalent:@""];
   
@@ -370,9 +381,7 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   item.state = appPref == AppPrefDisabled ? NSOnState : NSOffState;
   
   [menu addItem:NSMenuItem.separatorItem];
-  // [menu addItemWithTitle:@"Start at login" action:@selector(quit) keyEquivalent:@""];
-  [menu addItemWithTitle:@"About MouseNav" action:@selector(about) keyEquivalent:@""];
-  [menu addItemWithTitle:@"Quit MouseNav" action:@selector(quit) keyEquivalent:@""];
+  [menu addItemWithTitle:@"Quit Mouse Gestures" action:@selector(quit) keyEquivalent:@""];
 }
 
 CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
@@ -494,9 +503,11 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
   
   NSStatusBar *statusBar = [NSStatusBar systemStatusBar];
   NSStatusItem *item = [statusBar statusItemWithLength:NSVariableStatusItemLength];
-  item.button.title = @"⟺";
+  // item.button.title = @"⟺";
+  item.button.image = [NSImage imageNamed:@"StatusItem"];
+  item.button.image.template = YES;
   
-  item.menu = [NSMenu.alloc initWithTitle:@"MouseNav"];
+  item.menu = [NSMenu.alloc initWithTitle:@"Mouse Gestures"];
   item.menu.delegate = self;
   self.statusItem = item;  // not retained if we omit this
   
@@ -511,20 +522,24 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
   CFDictionaryRef options = CFDictionaryCreate(kCFAllocatorDefault, keys, values, sizeof(keys) / sizeof(*keys),
                                                &kCFCopyStringDictionaryKeyCallBacks, &kCFTypeDictionaryValueCallBacks);
   BOOL accessibilityEnabled = AXIsProcessTrustedWithOptions(options);
-  CFRelease(options);
   
   if (accessibilityEnabled) {
     mouseRunLoopSource = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, mouseEventTap, 0);
     CFRunLoopAddSource(CFRunLoopGetCurrent(), mouseRunLoopSource, kCFRunLoopCommonModes);
     
   } else {
-    NSAlert *alert = [NSAlert new];
+    NSAlert *alert = NSAlert.new;
     alert.alertStyle = NSAlertStyleWarning;
-    alert.messageText = @"MouseNav requires Accessibility permissions";
-    alert.informativeText = @"Go to System Preferences → Security & Privacy → Privacy → Accessibility, and enable MouseNav. Then re-open the app.";
+    alert.messageText = @"Thanks for using Mouse Gestures";
+    alert.informativeText = @"This app needs accessibility permissions. Please see our website for instructions.";
+    // alert.informativeText = @"Open System Preferences, and go to Security & Privacy → Privacy → Accessibility. If necessary, click the lock to make changes.\n\nClick [+], and choose Mouse Gestures in /Applications/Utilities. Finally, re-open the app.";
+    [alert addButtonWithTitle:@"Open Mouse Gestures website"];
     [alert runModal];
+    [NSWorkspace.sharedWorkspace openURL:[NSURL URLWithString:@"http://mackerron.com/gestures/#accessibility"]];
     [NSApplication.sharedApplication terminate:self];
   }
+  
+  CFRelease(options);
 }
 
 static CGEventRef mouseEventCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
@@ -637,6 +652,9 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
   CGEventFlags flags = 0;
   
   switch(appPref) {
+    case AppPrefDisabled:  // shouldn't happen, but suppresses a warning
+      return;
+      
     case AppPrefCmdBrackets:
       virtualKey = forward ? closeBracketKeycode : openBracketKeycode;
       flags = kCGEventFlagMaskCommand | (forward ? closeBracketFlags : openBracketFlags);
@@ -669,7 +687,7 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
     CFRunLoopRemoveSource(CFRunLoopGetCurrent(), mouseRunLoopSource, kCFRunLoopCommonModes);
     CFRelease(mouseRunLoopSource);
   }
-  CFRelease(mouseEventTap);
+  if (mouseEventTap) CFRelease(mouseEventTap);
   
   [NSDistributedNotificationCenter.defaultCenter removeObserver:self];
 }
