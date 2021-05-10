@@ -34,7 +34,8 @@ typedef NS_ENUM(NSInteger, AppPref) {
   AppPrefCmdCtrlArrows = 2,
   AppPrefCtrlShiftDash = 3,
   AppPrefCmdArrows = 4,
-  AppPrefAltCmdArrows = 5
+  AppPrefAltCmdArrows = 5,
+  AppPrefCmdPageUpDown = 7,
 };
 
 @implementation NSAttributedString (Extra)
@@ -87,6 +88,10 @@ static CGEventFlags dashFlags = 0;
 static CGKeyCode leftArrowKeycode = 0x7B;
 static CGKeyCode rightArrowKeycode = 0x7C;
 
+static CGKeyCode pageUpKeycode = 0x74;
+static CGKeyCode pageDownKeycode = 0x79;
+
+
 - (void)quit {
   [NSApplication.sharedApplication terminate:self];
 }
@@ -115,16 +120,20 @@ static CGKeyCode rightArrowKeycode = 0x7C;
   if (openBracketFlags || closeBracketFlags) [self showKeyboardLayoutWarning];
 }
 
-- (void)arrows {
+- (void)cmdArrows {
   [self setAppPref:AppPrefCmdArrows];
 }
 
-- (void)ctrlArrows {
+- (void)cmdCtrlArrows {
   [self setAppPref:AppPrefCmdCtrlArrows];
 }
 
 - (void)altCmdArrows {
   [self setAppPref:AppPrefAltCmdArrows];
+}
+
+- (void)cmdPageUpDown {
+  [self setAppPref:AppPrefCmdPageUpDown];
 }
 
 - (void)dash {
@@ -302,7 +311,7 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   [menu addItemWithTitle:@"Setup and Help" action:@selector(about) keyEquivalent:@""];
   [menu addItem:NSMenuItem.separatorItem];
 
-  NSMutableAttributedString *settingsCaption = [NSMutableAttributedString.alloc initWithString:@"For back and forward \nin "
+  NSMutableAttributedString *settingsCaption = [NSMutableAttributedString.alloc initWithString:@"For back and forward in \n"
                                                                                     attributes:@{NSFontAttributeName: menuFont}];
   [settingsCaption appendAttributedString:[NSAttributedString.alloc initWithString:appName
                                                                         attributes:@{NSFontAttributeName: boldMenuFont}]];
@@ -312,13 +321,11 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   item = [menu addItemWithTitle:settingsCaption.string action:NULL keyEquivalent:@""];
   item.attributedTitle = settingsCaption;
   
-  // item = [menu addItemWithTitle:@"For back and forward …" action:NULL keyEquivalent:@""];
+  NSAttributedString *attribTitle;
   
-  NSMutableParagraphStyle *p = NSMutableParagraphStyle.new;
-  p.lineHeightMultiple = 2.0;
-  
-  item = [menu addItemWithTitle:@"Send ⌘[ and ⌘]" action:@selector(brackets) keyEquivalent:@""];
-  item.attributedTitle = stringForShortcuts(@"⌘[", @"⌘]");
+  attribTitle = stringForShortcuts(@"⌘[", @"⌘]");
+  item = [menu addItemWithTitle:attribTitle.string action:@selector(brackets) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
   if (@available(macOS 11, *)) {
     if (openBracketFlags || closeBracketFlags) {
       item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
@@ -326,20 +333,29 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   }
   item.state = appPref == AppPrefCmdBrackets ? NSOnState : NSOffState;
   
-  item = [menu addItemWithTitle:@"Send ⌘← and ⌘→" action:@selector(arrows) keyEquivalent:@""];
-  item.attributedTitle = stringForShortcuts(@"⌘←", @"⌘→");
+  attribTitle = stringForShortcuts(@"⌘←", @"⌘→");
+  item = [menu addItemWithTitle:attribTitle.string action:@selector(cmdArrows) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
   item.state = appPref == AppPrefCmdArrows ? NSOnState : NSOffState;
   
-  item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(ctrlArrows) keyEquivalent:@""];
-  item.attributedTitle = stringForShortcuts(@"⌃⌘←", @"⌃⌘→");
+  attribTitle = stringForShortcuts(@"⌃⌘←", @"⌃⌘→");
+  item = [menu addItemWithTitle:@"Send ⌃⌘← and ⌃⌘→" action:@selector(cmdCtrlArrows) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
   item.state = appPref == AppPrefCmdCtrlArrows ? NSOnState : NSOffState;
   
-  item = [menu addItemWithTitle:@"Send ⌥⌘← and ⌥⌘→" action:@selector(altCmdArrows) keyEquivalent:@""];
-  item.attributedTitle = stringForShortcuts(@"⌥⌘←", @"⌥⌘→");
+  attribTitle = stringForShortcuts(@"⌥⌘←", @"⌥⌘→");
+  item = [menu addItemWithTitle:attribTitle.string action:@selector(altCmdArrows) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
   item.state = appPref == AppPrefAltCmdArrows ? NSOnState : NSOffState;
   
-  item = [menu addItemWithTitle:@"Send ⌃- and ⌃⇧-" action:@selector(dash) keyEquivalent:@""];
-  item.attributedTitle = stringForShortcuts(@"⌃-", @"⌃⇧-");
+  attribTitle = stringForShortcuts(@"⌘⇞", @"⌘⇟");
+  item = [menu addItemWithTitle:attribTitle.string action:@selector(cmdPageUpDown) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
+  item.state = appPref == AppPrefCmdPageUpDown ? NSOnState : NSOffState;
+  
+  attribTitle = stringForShortcuts(@"⌃-", @"⌃⇧-");
+  item = [menu addItemWithTitle:attribTitle.string action:@selector(dash) keyEquivalent:@""];
+  item.attributedTitle = attribTitle;
   if (@available(macOS 11, *)) {
     if (dashFlags) {
       item.image = [NSImage imageWithSystemSymbolName:@"exclamationmark.triangle.fill" accessibilityDescription:@"Warning"];
@@ -348,6 +364,9 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   item.state = appPref == AppPrefCtrlShiftDash ? NSOnState : NSOffState;
   
   /*
+  NSMutableParagraphStyle *p = NSMutableParagraphStyle.new;
+  p.lineHeightMultiple = 2.0;
+   
   item = [NSMenuItem.alloc initWithTitle:@"X" action:nil keyEquivalent:@""];
   NSView *view = [NSView.alloc initWithFrame:CGRectZero];
   
@@ -507,10 +526,32 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
                                           suspensionBehavior:NSNotificationSuspensionBehaviorCoalesce];
   
   [NSUserDefaults.standardUserDefaults registerDefaults:@{
-    @"com.apple.dt.Xcode": @(AppPrefCmdCtrlArrows),
+    // web browsers: default to Cmd+Arrows for maximum keyboard layout compatibility
+    @"com.apple.Safari": @(AppPrefCmdArrows),
+    @"com.google.Chrome": @(AppPrefCmdArrows),
+    @"org.mozilla.firefox": @(AppPrefCmdArrows),
+    @"com.microsoft.edgemac": @(AppPrefCmdArrows),
+    @"com.operasoftware.Opera": @(AppPrefCmdArrows),
+    
+    // Acrobat and Reader also use Cmd+Arrows ...
+    @"com.adobe.Reader": @(AppPrefCmdArrows),
+    @"com.adobe.Acrobat.Pro": @(AppPrefCmdArrows),
+    
+    // .. while InDesign does not
+    @"com.adobe.InDesign": @(AppPrefCmdPageUpDown),
+     
+    // these text editors use dashes
+    // note: BBEdit and TextMate don't seem to offer Back/Forward
     @"com.microsoft.VSCode": @(AppPrefCtrlShiftDash),
     @"com.sublimetext.3": @(AppPrefCtrlShiftDash),
+    @"com.sublimetext.4": @(AppPrefCtrlShiftDash),  // presumably
+    
+    // Xcode may be unique here
+    @"com.apple.dt.Xcode": @(AppPrefCmdCtrlArrows),
+    
+    // 3D modelling
     @"nl.ultimaker.cura": @(AppPrefDisabled),
+    @"org.blenderfoundation.blender": @(AppPrefDisabled),
   }];
   
   NSStatusBar *statusBar = [NSStatusBar systemStatusBar];
@@ -685,6 +726,11 @@ static void sendNavCmd(AppPref appPref, BOOL forward) {
     case AppPrefAltCmdArrows:
       virtualKey = forward ? rightArrowKeycode : leftArrowKeycode;
       flags = kCGEventFlagMaskCommand | kCGEventFlagMaskAlternate;
+      break;
+      
+    case AppPrefCmdPageUpDown:
+      virtualKey = forward ? pageDownKeycode : pageUpKeycode;
+      flags = kCGEventFlagMaskCommand;
       break;
       
     case AppPrefCtrlShiftDash:
