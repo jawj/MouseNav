@@ -262,6 +262,7 @@
 				CODE_SIGN_ENTITLEMENTS = MouseNav/MouseNav.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 8R68HM772B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MouseNav/Info.plist;
@@ -270,6 +271,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -283,6 +285,7 @@
 				CODE_SIGN_ENTITLEMENTS = MouseNav/MouseNav.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 8R68HM772B;
 				ENABLE_HARDENED_RUNTIME = YES;
 				INFOPLIST_FILE = MouseNav/Info.plist;
@@ -291,6 +294,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mackerron.MouseNav;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};

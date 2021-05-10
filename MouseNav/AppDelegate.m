@@ -584,7 +584,7 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
     NSAlert *alert = NSAlert.new;
     alert.alertStyle = NSAlertStyleWarning;
     alert.messageText = @"Thanks for using Mouse Gestures";
-    alert.informativeText = @"This app needs accessibility permissions. Please see our website for instructions.";
+    alert.informativeText = @"This app needs accessibility permissions. See how to grant them on our website.";
     // alert.informativeText = @"Open System Preferences, and go to Security & Privacy → Privacy → Accessibility. If necessary, click the lock to make changes.\n\nClick [+], and choose Mouse Gestures in /Applications/Utilities. Finally, re-open the app.";
     [alert addButtonWithTitle:@"Open Mouse Gestures website"];
     [alert runModal];
