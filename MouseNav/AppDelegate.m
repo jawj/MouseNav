@@ -65,11 +65,6 @@ typedef NS_ENUM(NSInteger, AppPref) {
 static CFMachPortRef mouseEventTap = NULL;
 static CFRunLoopSourceRef mouseRunLoopSource = NULL;
 
-/*
-static CFMachPortRef keyEventTap = NULL;
-static CFRunLoopSourceRef keyRunLoopSource = NULL;
-*/
-
 static GestureState gestureState = GestureStateAwaiting;
 static CGEventRef events[MaxEvents];
 static size_t nextEventsIndex = 0;
@@ -363,51 +358,6 @@ NSAttributedString* stringForShortcuts(NSString *s1, NSString *s2) {
   }
   item.state = appPref == AppPrefCtrlShiftDash ? NSOnState : NSOffState;
   
-  /*
-  NSMutableParagraphStyle *p = NSMutableParagraphStyle.new;
-  p.lineHeightMultiple = 2.0;
-   
-  item = [NSMenuItem.alloc initWithTitle:@"X" action:nil keyEquivalent:@""];
-  NSView *view = [NSView.alloc initWithFrame:CGRectZero];
-  
-  NSLabel *sendLabel = NSLabel.new;
-  sendLabel.stringValue = @"Send";
-  sendLabel.font = [NSFont menuFontOfSize:0.0];
-  
-  NSLabel *andLabel = NSLabel.new;
-  andLabel.stringValue = @"and";
-  andLabel.font = [NSFont menuFontOfSize:0.0];
-  
-  NSButton *backBtn = [NSButton buttonWithTitle:@"⌘[" target:self action:@selector(setBackShortcut)];
-  NSButton *fwdBtn = [NSButton buttonWithTitle:@"⌘]" target:self action:@selector(setForwardShortcut)];
-  
-  [view addSubview:sendLabel];
-  [view addSubview:backBtn];
-  [view addSubview:andLabel];
-  [view addSubview:fwdBtn];
-  
-  view.translatesAutoresizingMaskIntoConstraints =
-  sendLabel.translatesAutoresizingMaskIntoConstraints =
-  andLabel.translatesAutoresizingMaskIntoConstraints = backBtn.translatesAutoresizingMaskIntoConstraints = fwdBtn.translatesAutoresizingMaskIntoConstraints = NO;
-  
-  [NSLayoutConstraint activateConstraints:@[
-    [sendLabel.leadingAnchor constraintEqualToAnchor:view.leadingAnchor constant:24.0],
-    [backBtn.leadingAnchor constraintEqualToAnchor:sendLabel.trailingAnchor constant:6.0],
-    [andLabel.leadingAnchor constraintEqualToAnchor:backBtn.trailingAnchor constant:6.0],
-    [fwdBtn.leadingAnchor constraintEqualToAnchor:andLabel.trailingAnchor constant:6.0],
-    [view.trailingAnchor constraintGreaterThanOrEqualToAnchor:fwdBtn.trailingAnchor constant:20.0],
-    
-    [backBtn.topAnchor constraintEqualToAnchor:view.topAnchor constant: 2.0],
-    [sendLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
-    [view.bottomAnchor constraintEqualToAnchor:backBtn.bottomAnchor constant: 2.0],
-    [andLabel.centerYAnchor constraintEqualToAnchor:backBtn.centerYAnchor],
-    [view.bottomAnchor constraintEqualToAnchor:fwdBtn.bottomAnchor constant: 2.0],
-  ]];
-  
-  item.view = view;
-  [menu addItem:item];
-  */
-  
   item = [menu addItemWithTitle:@"Do nothing" action:@selector(none) keyEquivalent:@""];
   item.state = appPref == AppPrefDisabled ? NSOnState : NSOffState;
   
@@ -455,6 +405,21 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
   DLog(@"Keyboard: %@ (%@)", keyboardName, keyboardID);
   
   CFDataRef layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData);
+  CFRelease(source);
+  
+  // TISGetInputSourceProperty returns null with  Japanese keyboard layout
+  // see https://github.com/microsoft/node-native-keymap/blob/main/src/keyboard_mac.mm
+  if (!layoutData) {
+    DLog(@"Using fallback layout data strategy ...");
+    source = TISCopyCurrentKeyboardLayoutInputSource();
+    layoutData = TISGetInputSourceProperty(source, kTISPropertyUnicodeKeyLayoutData);
+    CFRelease(source);
+    if (!layoutData) {
+      DLog(@"Couldn't get layout data");
+      return;  // fail: fall back on previous/default
+    }
+  }
+  
   const UCKeyboardLayout *keyboardLayout = (const UCKeyboardLayout *)CFDataGetBytePtr(layoutData);
   
   UInt32 keyboardType = LMGetKbdType();
@@ -507,14 +472,9 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
         DLog(@"Error translating %d (%#04x): %d",  keycode, modifierKeyState, resultCode);
       }
       
-      if (foundOpenBracket && foundCloseBracket && foundDash) {
-        CFRelease(source);
-        return;
-      }
+      if (foundOpenBracket && foundCloseBracket && foundDash) return;
     }
   }
-  
-  CFRelease(source);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
