@@ -502,6 +502,7 @@ CGEventFlags eventFlagsFromModifiers(UInt32 modifiers) {
      
     // these text editors use dashes
     // note: BBEdit and TextMate don't seem to offer Back/Forward
+    @"dev.zed.Zed": @(AppPrefCtrlShiftDash),
     @"com.microsoft.VSCode": @(AppPrefCtrlShiftDash),
     @"com.sublimetext.3": @(AppPrefCtrlShiftDash),
     @"com.sublimetext.4": @(AppPrefCtrlShiftDash),  // presumably
